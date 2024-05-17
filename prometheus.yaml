@@ -1,0 +1,31 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 25s
+  external_labels:
+    cluster: demo
+    namespace: demo
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+  - job_name: "manual"
+    static_configs:
+      - targets: ["host.docker.internal:2112"] 
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "go_.*"
+        action: drop
+  - job_name: demo/mimir
+    static_configs:
+      - targets: ["mimir:9009"]
+        labels:
+          pod: "mimir"
+
+rule_files:
+  - /etc/prometheus/rules.yaml
+
+remote_write:
+  - url: http://mimir:9009/api/v1/push # mimir works since same network, docker network inspect grafanet
+    headers:
+      X-Scope-OrgID: demo

@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ${PROJECT_ROOT}/mimir/prometheus.yaml:/etc/prometheus/prometheus.yml
+      - ${PROJECT_ROOT}/mimir/rules.yaml:/etc/prometheus/rules.yaml
+    command: ["--config.file=/etc/prometheus/prometheus.yml"]
+    depends_on:
+      - "mimir"
+
+  mimir:
+    image: grafana/mimir
+    container_name: mimir
+    ports:
+      - "9009:9009"
+    volumes:
+      - ${PROJECT_ROOT}/mimir/mimir.yaml:/etc/mimir/mimir.yaml
+    command: ["--config.file=/etc/mimir/mimir.yaml"]
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=kidding
+      - GF_USERS_DEFAULT_THEME=light
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    volumes:
+      - ${PROJECT_ROOT}/mimir/grafana.yaml:/etc/grafana/provisioning/datasources/Datasource.yaml:ro
+      - ${PROJECT_ROOT}/mimir/grafana_dashboards.yaml:/etc/grafana/provisioning/dashboards/provisioning-dashboards.yaml:ro
+      - ${PROJECT_ROOT}/mimir/grafana-dashboards/:/var/lib/grafana/dashboards/
+networks:
+  ${DOCKER_NETWORK}:
+    driver: bridge
